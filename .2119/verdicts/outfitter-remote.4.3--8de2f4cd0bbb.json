@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.3--8de2f4cd0bbb",
+  "requirementId": "outfitter-remote.4.3",
+  "hash": "8de2f4cd0bbb",
+  "verdict": "pass",
+  "summary": "Parameterized COMPLETE and DROPPED cleanup dispatch remote close; executable companion gateway contract verifies storage_hold clears and fixed retention persists in DB and Kubernetes.",
+  "timestamp": "2026-10-13T21:16:01.305Z"
+}
