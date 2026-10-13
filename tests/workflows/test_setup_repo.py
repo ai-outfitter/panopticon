@@ -295,82 +295,63 @@ dispatch_harness_auth unknown || echo unsupported
 # 2119: REQ-005.1
 # 2119: REQ-005.3
 # 2119: REQ-005.4
-def test_harness_auth_dispatch_routes_outfitter_through_pi(tmp_path: Path) -> None:
-    new_path = tmp_path / "new.d"
-    existing_root = tmp_path / "existing-root.d"
-    existing_root.mkdir()
-    existing_outfitter = tmp_path / "existing-outfitter.d"
-    (existing_outfitter / "outfitter").mkdir(parents=True)
-
-    for credential_path in (new_path, existing_root, existing_outfitter):
-        body = f"""
-credential_path={shlex.quote(str(credential_path))}
-setup_pi_auth() {{ echo pi-auth-flow; }}
+def test_harness_auth_dispatch_routes_outfitter_to_native_login() -> None:
+    body = """
+setup_pi_auth() { echo forbidden-pi-flow; }
+setup_outfitter_auth() { echo native-outfitter-flow; }
 dispatch_harness_auth outfitter || echo unsupported
 """
-
-        lines = _sh(body).splitlines()
-        assert len(lines) == 2
-        assert lines[0] == "Outfitter uses Pi credentials."
-        assert lines[1] == "pi-auth-flow"
-        profiles = credential_path / "outfitter" / "profiles"
-        assert profiles.is_dir()
-        assert stat.S_IMODE(profiles.stat().st_mode) == 0o700
-        rerun_lines = _sh(body).splitlines()
-        assert rerun_lines == lines  # an existing profiles directory remains a successful setup
-        assert profiles.is_dir()
-
-    assert stat.S_IMODE(new_path.stat().st_mode) == 0o700
+    assert _sh(body).splitlines() == ["native-outfitter-flow"]
 
 
-# 2119: REQ-005.1
-def test_outfitter_profile_error_does_not_report_supported_harness_as_unsupported(
-    tmp_path: Path,
-) -> None:
-    credential_path = tmp_path / "not-a-directory"
-    credential_path.write_text("")
+# 2119: REQ-005.2.1
+# 2119: REQ-005.3.1
+# 2119: REQ-005.4.1
+@pytest.mark.parametrize("remote", ["0", "1"])
+def test_outfitter_native_setup_scopes_login_and_prepares_application_home(tmp_path, remote):
+    executable = tmp_path / "bin" / "outfitter"
+    executable.parent.mkdir()
+    executable.write_text("""#!/bin/sh
+printf '%s\\n' "$*" > "$OUTFITTER_USER_HOME/login-args"
+mkdir -p "$OUTFITTER_USER_HOME/.pi/agent"
+printf '%s' '{"outfitter":{"type":"oauth","refresh":"fake"}}' > "$OUTFITTER_USER_HOME/.pi/agent/auth.json"
+""")
+    executable.chmod(0o700)
     body = f"""
-credential_path={shlex.quote(str(credential_path))}
-setup_pi_auth() {{ echo pi-auth-flow; }}
-dispatch_harness_auth outfitter || echo unsupported
+PATH={shlex.quote(str(executable.parent))}:$PATH
+PANOPTICON_SECRETS_DIR={shlex.quote(str(tmp_path / "secrets"))}
+PANOPTICON_OUTFITTER_REMOTE={remote}
+credential_dir=''
+{_shell_function("setup_outfitter_auth")}
+set_repo_credential_dir() {{ printf 'repo:%s\\n' "$1"; }}
+add_summary() {{ printf 'success:%s\\n' "$1"; }}
+dispatch_harness_auth outfitter
 """
+    output = _sh(body)
+    home = tmp_path / "secrets" / "outfitter.d" / "outfitter"
+    assert (home / "login-args").read_text().strip() == (
+        "login --workspaces" if remote == "1" else "login"
+    )
+    assert (home / ".agents" / "agents" / "panopticon" / "agent.md").is_file()
+    assert stat.S_IMODE((home / ".pi" / "agent" / "auth.json").stat().st_mode) == 0o600
+    assert "repo:outfitter.d" in output and "success:" in output
 
-    lines = _sh(body).splitlines()
-    assert "unsupported" not in lines
-    assert lines[-1] == "pi-auth-flow"
-    assert credential_path.read_text() == ""
 
-
-# 2119: REQ-005.2
-def test_outfitter_uses_real_pi_auth_conditions(tmp_path: Path) -> None:
-    values = " ".join(API_KEY_ENV_VARS)
-    env_key = tmp_path / "env-key"
-    env_key.write_text("ANTHROPIC_API_KEY=secret\n")
-    auth_file = tmp_path / "auth-file"
-    auth_file.mkdir()
-    (auth_file / "auth.json").write_text('{"credential":"value"}')
-    no_credentials = tmp_path / "no-credentials"
-    no_credentials.write_text("")
-
-    for env_file, credential_path in (
-        (env_key, ""),
-        (no_credentials, str(auth_file)),
-        (no_credentials, ""),
-    ):
-        common = f"""
-PANOPTICON_PI_API_KEY_ENV_VARS={shlex.quote(values)}
-PANOPTICON_ENV_FILE={shlex.quote(str(env_file))}
-credential_path={shlex.quote(credential_path)}
-{_SETUP_PI_AUTH}
-add_summary() {{ :; }}
-read_secret() {{ printf provider-key; }}
-store_token() {{ echo stored:$1; }}
+# 2119: REQ-005.2.1
+def test_failed_outfitter_login_does_not_report_success_or_update_repo(tmp_path):
+    executable = tmp_path / "outfitter"
+    executable.write_text("#!/bin/sh\nexit 1\n")
+    executable.chmod(0o700)
+    body = f"""
+PATH={shlex.quote(str(tmp_path))}:$PATH
+PANOPTICON_SECRETS_DIR={shlex.quote(str(tmp_path / "secrets"))}
+credential_dir=''
+{_shell_function("setup_outfitter_auth")}
+set_repo_credential_dir() {{ echo forbidden-update; }}
+add_summary() {{ echo forbidden-success; }}
+dispatch_harness_auth outfitter || echo login-failed
 """
-        pi_lines = _sh(f"{common}\nsetup_pi_auth").splitlines()
-        outfitter_lines = _sh(f"{common}\ndispatch_harness_auth outfitter").splitlines()
-
-        assert outfitter_lines[0] == "Outfitter uses Pi credentials."
-        assert outfitter_lines[1:] == pi_lines
+    assert _sh(body).splitlines() == ["login-failed"]
 
 
 def test_codex_repo_auth_check_accepts_env_file_or_credential_dir(tmp_path: Path) -> None:

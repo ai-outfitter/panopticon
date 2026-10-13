@@ -22,7 +22,7 @@ jobs:
         run: |
           docker build -f container/workspace.Dockerfile -t panopticon-runtime:test .
           docker run --rm --entrypoint outfitter panopticon-runtime:test --version | grep -Fx 1.18.0
-          docker run --rm --user root --volume "$PWD/tests:/tests:ro" --entrypoint sh panopticon-runtime:test -c 'pip install --quiet pytest pytest-asyncio && python -m pytest -q /tests/container/test_workspace.py'
+          docker run --rm --user root --volume "$PWD/tests:/tests:ro" --entrypoint sh panopticon-runtime:test -c 'pip install --quiet pytest pytest-asyncio && python -m pytest -q -o asyncio_mode=auto /tests/container/test_workspace.py'
           docker run --rm --entrypoint python panopticon-runtime:test -c 'from panopticon.container.workspace import WorkspaceRuntime, create_apps'
           docker run --detach --name runtime-smoke --publish 127.0.0.1:18080:8080 --env WORKSPACE_TOKEN=runtime-smoke-token-over-thirty-two-characters panopticon-runtime:test
           trap 'docker logs runtime-smoke; docker rm --force runtime-smoke' EXIT

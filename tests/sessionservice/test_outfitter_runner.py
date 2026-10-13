@@ -200,7 +200,7 @@ def test_concurrent_installation_startup_keeps_one_identity(tmp_path):
 
 # 2119: 2.5
 def test_incompatible_runtime_is_rejected_before_claim(context):
-    remote, client, task, repo = context
+    remote, client, task, _repo = context
     original = remote.command
 
     def command(*args, payload=None, application_home=None):
@@ -209,7 +209,15 @@ def test_incompatible_runtime_is_rejected_before_claim(context):
         return original(*args, payload=payload, application_home=application_home)
 
     remote.command = command
+    spawner = Spawner(
+        client,
+        MagicMock(),
+        remote_runner=remote,
+        runner_id="runner",
+        cache=MagicMock(),
+        tasks_root="/unused",
+    )
     with pytest.raises(ValueError, match="runtime"):
-        remote.validate_task(task, repo)
+        spawner.spawn_one(task)
     assert ("expire", remote.workspace(task["id"])) == remote.calls[-1][0]
-    client.claim_task.assert_not_called()
+    client.claim.assert_not_called()
