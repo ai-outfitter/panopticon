@@ -87,7 +87,11 @@ class WorkspaceRuntime:
             ).returncode
             == 0
         )
+        if self.state.get("state") == "running" and not running:
+            self.state.update(state="interrupted", active=False)
+            self.save()
         return {
+            "interrupted": self.state.get("state") == "interrupted",
             "exists": bool(self.state),
             "running": running,
             "active": bool(running and self.state.get("active")),
@@ -214,11 +218,19 @@ class WorkspaceRuntime:
         if state == "closed":
             self.closing = True
         async with self.lock:
+            if self.state.get("state") == "closed" or (
+                state == "sleeping" and self.state.get("state") == "interrupted"
+            ):
+                return self.status()
             if session := self.state.get("session"):
                 self.tmux("kill-session", "-t", session, check=False)
             if self.registration and self.registration.poll() is None:
                 self.registration.terminate()
-                await asyncio.to_thread(self.registration.wait, 5)
+                try:
+                    await asyncio.to_thread(self.registration.wait, 5)
+                except subprocess.TimeoutExpired:
+                    self.registration.kill()
+                    await asyncio.to_thread(self.registration.wait)
             self.state.update(state=state, active=False)
             self.save()
             return self.status()
@@ -321,7 +333,10 @@ def create_apps(runtime: WorkspaceRuntime) -> tuple[FastAPI, FastAPI]:
 
     @app.post("/sessions/suspend")
     async def suspend() -> dict[str, Any]:
-        if runtime.status()["active"]:
+        status = runtime.status()
+        if status.get("interrupted"):
+            raise HTTPException(409, "Session was interrupted; explicit recovery is required")
+        if status["active"]:
             raise HTTPException(409, "Agent is active")
         return await runtime.stop("sleeping")
 
@@ -445,7 +460,7 @@ def create_apps(runtime: WorkspaceRuntime) -> tuple[FastAPI, FastAPI]:
             if process.returncode is None:
                 process.terminate()
             await process.wait()
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await output_task
 
     return app, proxy

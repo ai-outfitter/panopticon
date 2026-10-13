@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.6.2--5324b0a3417a",
+  "requirementId": "outfitter-remote.6.2",
+  "hash": "5324b0a3417a",
+  "verdict": "pass",
+  "summary": "Real gateway rejects wake after retained expiry and transitions the Panopticon workspace to Expired.",
+  "timestamp": "2026-10-13T20:50:29.106Z"
+}

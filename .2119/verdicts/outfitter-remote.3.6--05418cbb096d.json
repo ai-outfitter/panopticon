@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.6--05418cbb096d",
+  "requirementId": "outfitter-remote.3.6",
+  "hash": "05418cbb096d",
+  "verdict": "pass",
+  "summary": "Executable companion suite rejects non-loopback origins credentials paths queries and fleet-token forwarding before connection.",
+  "timestamp": "2026-10-13T20:42:31.265Z"
+}

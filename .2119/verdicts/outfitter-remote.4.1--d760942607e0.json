@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.1--d760942607e0",
+  "requirementId": "outfitter-remote.4.1",
+  "hash": "d760942607e0",
+  "verdict": "pass",
+  "summary": "Real tmux session remains running after authenticated terminal websocket detachment.",
+  "timestamp": "2026-10-13T20:41:54.028Z"
+}

@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.5.1--b06d6ca12c11",
+  "requirementId": "outfitter-remote.5.1",
+  "hash": "b06d6ca12c11",
+  "verdict": "pass",
+  "summary": "Executable companion device suite rejects inference-only access at the workspace API and scope resolver.",
+  "timestamp": "2026-10-13T20:42:32.247Z"
+}

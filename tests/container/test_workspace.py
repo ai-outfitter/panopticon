@@ -59,7 +59,6 @@ async def test_healthy_sleep_preserves_repository_and_conversation(tmp_path, mon
     assert runtime.state["generation"] == "2"
 
 
-# 2119: 3.5
 def test_uncertain_input_is_not_replayed(tmp_path, monkeypatch):
     runtime = WorkspaceRuntime(tmp_path)
     runtime.state = {"session": "task", "state": "sleeping"}
@@ -222,3 +221,27 @@ while True: time.sleep(0.1)
         assert runtime.status()["running"]
     finally:
         subprocess.run(["tmux", "-L", socket, "kill-server"], check=False, capture_output=True)
+
+
+# 2119: 4.6
+def test_idle_sleep_cannot_convert_lost_compute_into_a_healthy_resume(tmp_path, monkeypatch):
+    from panopticon.container import workspace
+
+    runtime = WorkspaceRuntime(tmp_path)
+    runtime.state = {
+        "config": config().model_dump(),
+        "state": "running",
+        "session": "lost",
+        "active": True,
+    }
+    monkeypatch.setenv("WORKSPACE_TOKEN", "test-runtime-token")
+    monkeypatch.setattr(
+        workspace.subprocess, "run", lambda *args, **kwargs: MagicMock(returncode=1)
+    )
+    app, _ = create_apps(runtime)
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer test-runtime-token"}
+        assert client.get("/sessions", headers=headers).json()["interrupted"] is True
+        assert client.post("/sessions/suspend", headers=headers).status_code == 409
+        assert client.post("/sessions/resume", headers=headers).status_code == 409
+    assert WorkspaceRuntime(tmp_path).state["state"] == "interrupted"

@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.2.3--d8cb495e433c",
+  "requirementId": "outfitter-remote.2.3",
+  "hash": "d8cb495e433c",
+  "verdict": "pass",
+  "summary": "Parameterized spawner tests reject local-only repositories Docker privilege custom layers and hooks before claim.",
+  "timestamp": "2026-10-13T20:22:15.797Z"
+}

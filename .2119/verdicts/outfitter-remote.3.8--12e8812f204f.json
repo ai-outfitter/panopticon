@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.8--12e8812f204f",
+  "requirementId": "outfitter-remote.3.8",
+  "hash": "12e8812f204f",
+  "verdict": "pass",
+  "summary": "Real scoped task authority rejects an orchestrator mutation of an unrelated task and preserves its unchanged slug.",
+  "timestamp": "2026-10-13T20:41:53.072Z"
+}

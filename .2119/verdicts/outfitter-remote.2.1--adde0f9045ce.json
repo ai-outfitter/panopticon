@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.2.1--adde0f9045ce",
+  "requirementId": "outfitter-remote.2.1",
+  "hash": "adde0f9045ce",
+  "verdict": "pass",
+  "summary": "Runner selection test rejects routing a disabled-backend task to remote execution.",
+  "timestamp": "2026-10-13T20:22:14.855Z"
+}

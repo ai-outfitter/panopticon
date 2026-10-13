@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.5.5--59d80069fe5c",
+  "requirementId": "outfitter-remote.5.5",
+  "hash": "59d80069fe5c",
+  "verdict": "pass",
+  "summary": "Both authenticated webapp and real gateway reject another owner POSTing for a bridge ticket.",
+  "timestamp": "2026-10-13T20:50:28.622Z"
+}

@@ -1,0 +1,8 @@
+{
+  "reviewId": "REQ-005.3.1--a3edb8b1848f",
+  "requirementId": "REQ-005.3.1",
+  "hash": "a3edb8b1848f",
+  "verdict": "pass",
+  "summary": "Parameterized shell setup requires login without workspace permission locally and with workspace permission only in explicit remote mode.",
+  "timestamp": "2026-10-13T20:41:56.911Z"
+}

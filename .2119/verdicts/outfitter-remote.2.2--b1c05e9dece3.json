@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.2.2--b1c05e9dece3",
+  "requirementId": "outfitter-remote.2.2",
+  "hash": "b1c05e9dece3",
+  "verdict": "pass",
+  "summary": "Selection test verifies both Claude and Codex remain on the local runner when remote execution is enabled.",
+  "timestamp": "2026-10-13T20:22:15.327Z"
+}

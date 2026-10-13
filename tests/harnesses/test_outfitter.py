@@ -3,6 +3,8 @@
 # 2119-spec: outfitter-remote
 from pathlib import Path
 
+import pytest
+
 from panopticon.core.models import Skill
 from panopticon.harnesses import BootstrapContext, LaunchContext
 from panopticon.harnesses.outfitter import OutfitterHarness
@@ -97,7 +99,6 @@ def test_bootstrap_keeps_existing_user_settings_and_agents(tmp_path: Path) -> No
 
 # 2119: 3.3
 # 2119: 3.4
-# 2119: 6.1
 def test_runtime_uses_relay_without_user_or_provider_credentials(tmp_path: Path) -> None:
     import json
 
@@ -247,3 +248,37 @@ def test_shared_login_home_receives_the_actual_agent_definition(tmp_path, monkey
     assert str(tmp_path / ".outfitter" / ".pi" / "agent" / "sessions") in harness.argv(
         LaunchContext(home=tmp_path, cwd=tmp_path)
     )
+
+
+# 2119: REQ-016.1.1
+@pytest.mark.parametrize("stalled", ["activity", "turn"])
+def test_modified_outfitter_hooks_bound_stalled_activity_and_turn_writes(tmp_path, stalled):
+    import subprocess
+
+    bootstrap(tmp_path)
+    source = (
+        (tmp_path / ".outfitter" / "turn.ts")
+        .read_text()
+        .replace("export default function", "const extension = function")
+    )
+    source += f"\nconst stalled = {stalled!r};\n"
+    source += """
+const calls = [];
+let aborted = 0;
+const handlers = {};
+extension({on: (event, handler) => {handlers[event] = handler;}});
+process.env.PANOPTICON_ACTIVITY_URL = "http://stalled/activity";
+globalThis.fetch = (url, options) => {
+  calls.push(url);
+  if (stalled === "turn" && url.endsWith("/activity")) return Promise.resolve({ok:true});
+  return new Promise((_resolve, reject) => {
+    options.signal.addEventListener("abort", () => { aborted += 1; reject(new Error("timeout")); }, {once:true});
+  });
+};
+const started = Date.now();
+await Promise.all([handlers.agent_start(), handlers.agent_end(), handlers.input({}, {isIdle: () => false})]);
+if (Date.now() - started >= 2800 || Date.now() - started < 1500) throw new Error("turn handlers did not exercise bounded timeout");
+if (aborted !== 3) throw new Error("not every hook aborted its stalled request");
+if (calls.filter(url => url.endsWith("/turn")).length !== (stalled === "turn" ? 3 : 0)) throw new Error("wrong stalled request exercised");
+"""
+    subprocess.run(["node", "--input-type=module", "--eval", source], check=True, timeout=4)

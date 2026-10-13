@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.7--dcb313243f3d",
+  "requirementId": "outfitter-remote.3.7",
+  "hash": "dcb313243f3d",
+  "verdict": "pass",
+  "summary": "Provisioning test verifies exact remote branch and clone recorded through local service; terminal lifecycle tests preserve backend dispatch.",
+  "timestamp": "2026-10-13T20:50:30.562Z"
+}

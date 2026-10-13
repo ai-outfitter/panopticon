@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.1.2--9d96917306b5",
+  "requirementId": "outfitter-remote.1.2",
+  "hash": "9d96917306b5",
+  "verdict": "pass",
+  "summary": "Fake resumed agent reads preserved conversation from generated session directory and rejects repeating initial prompt.",
+  "timestamp": "2026-10-13T20:51:39.721Z"
+}

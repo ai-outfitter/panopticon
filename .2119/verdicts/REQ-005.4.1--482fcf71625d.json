@@ -1,0 +1,8 @@
+{
+  "reviewId": "REQ-005.4.1--482fcf71625d",
+  "requirementId": "REQ-005.4.1",
+  "hash": "482fcf71625d",
+  "verdict": "pass",
+  "summary": "Successful native setup creates a private repository application home containing the Panopticon agent definition.",
+  "timestamp": "2026-10-13T20:41:57.391Z"
+}

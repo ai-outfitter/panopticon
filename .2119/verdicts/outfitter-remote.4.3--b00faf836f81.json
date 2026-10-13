@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.3--b00faf836f81",
+  "requirementId": "outfitter-remote.4.3",
+  "hash": "b00faf836f81",
+  "verdict": "pass",
+  "summary": "Terminal COMPLETE and DROPPED tasks issue remote close; real gateway closure clears storage_hold and fixes DB and Kubernetes retention.",
+  "timestamp": "2026-10-13T20:50:27.166Z"
+}

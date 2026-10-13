@@ -88,7 +88,6 @@ def test_identity_survives_repeated_start_and_runner_restart(context):
     assert remote.installation == restarted.installation
 
 
-# 2119: 3.1
 # 2119: 3.2
 # 2119: 3.3
 # 2119: 3.4
@@ -221,3 +220,41 @@ def test_incompatible_runtime_is_rejected_before_claim(context):
         spawner.spawn_one(task)
     assert ("expire", remote.workspace(task["id"])) == remote.calls[-1][0]
     client.claim.assert_not_called()
+
+
+# 2119: 3.7
+def test_remote_branch_provisioning_is_recorded_through_local_service(context):
+    remote, client, task, _repo = context
+    task.update(slug="remote-plan", provisioned=False)
+    original = remote.command
+
+    def command(*args, payload=None, application_home=None):
+        if payload and payload.get("operation") == "provision":
+            return {"branch": "panopticon/remote-plan", "clone": "/workspace/repo"}
+        return original(*args, payload=payload, application_home=application_home)
+
+    remote.command = command
+    assert remote.provision(task) == "panopticon/remote-plan"
+    client.record_provisioning.assert_called_once_with(
+        task["id"], "panopticon/remote-plan", "/workspace/repo", "runner", True
+    )
+
+
+# 2119: 4.3
+@pytest.mark.parametrize("state", ["COMPLETE", "DROPPED"])
+def test_terminal_tasks_close_the_managed_session(context, monkeypatch, state):
+    from panopticon.sessionservice import outfitter_runner
+
+    remote, client, task, _repo = context
+    monkeypatch.setattr(outfitter_runner.subprocess, "run", lambda *args, **kwargs: MagicMock())
+    spawner = Spawner(
+        client,
+        MagicMock(),
+        remote_runner=remote,
+        runner_id="runner",
+        cache=MagicMock(),
+        tasks_root="/unused",
+    )
+    spawner.cleanup({**task, "state": state, "claimed_by": "runner"})
+    assert remote.calls == [(("close", remote.workspace(task["id"])), None)]
+    client.release.assert_called_once_with(task["id"])

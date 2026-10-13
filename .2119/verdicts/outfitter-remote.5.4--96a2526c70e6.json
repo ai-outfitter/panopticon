@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.5.4--96a2526c70e6",
+  "requirementId": "outfitter-remote.5.4",
+  "hash": "96a2526c70e6",
+  "verdict": "pass",
+  "summary": "Executable companion websocket suite accepts a fresh ticket then rejects reuse.",
+  "timestamp": "2026-10-13T20:42:33.739Z"
+}

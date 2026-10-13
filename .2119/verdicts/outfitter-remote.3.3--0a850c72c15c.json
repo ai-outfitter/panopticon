@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.3--0a850c72c15c",
+  "requirementId": "outfitter-remote.3.3",
+  "hash": "0a850c72c15c",
+  "verdict": "pass",
+  "summary": "Populated user refresh token remains absent from remote config and workspace relay bootstrap creates no user auth file.",
+  "timestamp": "2026-10-13T20:51:41.694Z"
+}
