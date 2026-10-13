@@ -118,7 +118,10 @@ def test_every_registered_pi_runtime_injects_the_bounded_extension(tmp_path: Pat
     OutfitterHarness().bootstrap(ctx)
 
     assert (tmp_path / ".pi" / "agent" / PI_EXTENSION_FILE).read_text() == TURN_EXTENSION
-    assert (tmp_path / ".outfitter" / OUTFITTER_EXTENSION_FILE).read_text() == TURN_EXTENSION
+    outfitter_extension = (tmp_path / ".outfitter" / OUTFITTER_EXTENSION_FILE).read_text()
+    assert 'pi.on("agent_end"' in outfitter_extension
+    assert "AbortController" in outfitter_extension
+    assert "setTimeout(() => controller.abort(), 2000)" in outfitter_extension
 
     launch = LaunchContext(home=tmp_path, cwd=Path("/workspace"))
     for harness, expected_extension in (
@@ -129,7 +132,9 @@ def test_every_registered_pi_runtime_injects_the_bounded_extension(tmp_path: Pat
         assert argv.count("--extension") == 1
         extension_index = argv.index("--extension")
         assert argv[extension_index + 1] == str(expected_extension)
-        assert expected_extension.read_text() == TURN_EXTENSION
+        assert expected_extension.read_text() == (
+            TURN_EXTENSION if harness.name == "pi" else outfitter_extension
+        )
 
     codex = tomllib.loads(render_config("http://service", "", Path("/workspace")))["hooks"]
     assert set(codex) == {"Stop", "UserPromptSubmit"}

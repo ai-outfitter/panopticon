@@ -31,6 +31,7 @@ from panopticon.sessionservice.executions import WorkflowExecutions
 from panopticon.sessionservice.git_credentials import GitCredentialError, repo_git_transport
 from panopticon.sessionservice.images import ImageBuilder
 from panopticon.sessionservice.local_runner import CONTAINER_HOME, LocalRunner
+from panopticon.sessionservice.outfitter_runner import OutfitterRunner
 from panopticon.sessionservice.shell_runner import ShellRunner
 from panopticon.sessionservice.spawn import cleanup_workspace, prepare_workspace
 
@@ -103,6 +104,7 @@ class Spawner:
         cache: CloneCache,
         tasks_root: str,
         shell_runner: ShellRunner | None = None,
+        remote_runner: OutfitterRunner | None = None,
         executions: WorkflowExecutions | None = None,
         git: object | None = None,
         images: ImageBuilder | None = None,
@@ -119,6 +121,7 @@ class Spawner:
     ) -> None:
         self._client = client
         self._runner = runner
+        self._remote_runner = remote_runner
         self._shell_runner = shell_runner
         self._runner_id = runner_id
         #: The cached "how is this workflow run" lookup (runner_type + shell details), shared with the
@@ -173,7 +176,11 @@ class Spawner:
         if task["state"] in TERMINAL_LABELS or task.get("claimed_by") or task.get("launch_paused"):
             return None
         self._validate_runner_configuration(task)
-        if not self._executions.is_shell(task.get("workflow")) and not self._daemon_reachable():
+        if (
+            not self._is_remote(task)
+            and not self._executions.is_shell(task.get("workflow"))
+            and not self._daemon_reachable()
+        ):
             _log.error(
                 "docker daemon unreachable — deferring spawn of task %s until it returns",
                 task["id"],
@@ -199,6 +206,14 @@ class Spawner:
 
     def _validate_runner_configuration(self, task: JsonObj) -> None:
         """Validate the selected backend before any claim or respawn side effect."""
+        if self._is_remote(task):
+            assert self._remote_runner is not None
+            self._remote_runner.validate_task(
+                task,
+                self._client.get_repo(task["repo_id"]),
+                self._client.workflow_image_layer(task["workflow"]),
+            )
+            return
         validate = getattr(self._runner_for(task), "validate_configuration", None)
         if validate is not None:
             validate()
@@ -225,7 +240,7 @@ class Spawner:
             is_shell = self._executions.is_shell(task["workflow"])
             if is_shell:
                 return self._spawn_shell(task, repo)
-            if detail := self._credential_check(task, repo):
+            if not self._is_remote(task) and (detail := self._credential_check(task, repo)):
                 raise _MissingTaskAuth(detail)
             return self._spawn_container(task, repo)
         except Exception as exc:
@@ -341,6 +356,12 @@ class Spawner:
         """The Docker path: clone the per-task workspace, compose base → workflow → repo, and spawn
         the container (reports ``PREPARING`` → ``BUILDING`` → ``STARTING`` → ``AWAITING``)."""
         task_id = task["id"]
+        if self._is_remote(task):
+            assert self._remote_runner is not None
+            self._report(task_id, LifecyclePhase.PREPARING)
+            result = self._remote_runner.spawn_task(task, repo)
+            self._report(task_id, LifecyclePhase.AWAITING)
+            return result
         workspace = self._prepare_task_dir(
             task, repo, clone=True
         )  # a container always mounts a checkout
@@ -421,12 +442,22 @@ class Spawner:
             progress=lambda phase: self._report(task_id, phase),  # STARTING then AWAITING
         )
 
-    def _runner_for(self, task: JsonObj) -> LocalRunner | ShellRunner:
+    def _is_remote(self, task: JsonObj) -> bool:
+        return (
+            getattr(self, "_remote_runner", None) is not None
+            and task.get("harness") == "outfitter"
+            and not self._executions.is_shell(task.get("workflow"))
+        )
+
+    def _runner_for(self, task: JsonObj) -> LocalRunner | ShellRunner | OutfitterRunner:
         """The runner that owns ``task``'s session — the shell runner for a shell workflow (when one
         is configured), else the Docker runner. Lets the liveness probes (``is_running`` /
         ``has_session``) in :meth:`reconcile`, :meth:`cleanup`, :meth:`startup_reclaim` and
         :meth:`_is_orphan` check the right backend. Tasks without a ``workflow`` key (some internal
         callers) fall back to the Docker runner."""
+        if self._is_remote(task):
+            assert self._remote_runner is not None
+            return self._remote_runner
         if self._shell_runner is not None and self._executions.is_shell(task.get("workflow")):
             return self._shell_runner
         return self._runner
@@ -453,6 +484,11 @@ class Spawner:
         whose container *is* still running is left to keep coming up."""
         if task.get("claimed_by") != self._runner_id:
             return  # not ours (or unclaimed) — spawn_one handles the unclaimed case
+        if self._is_remote(task) and task["state"] not in TERMINAL_LABELS:
+            assert self._remote_runner is not None
+            self._remote_runner.ensure_bridge(task["id"])
+            self._remote_runner.attach_session(task["id"])
+            return
         if task.get("container_status") not in _IN_PROGRESS:
             return  # live / down / failed / queued / disconnected — nothing to reconcile
         if self._runner_for(task).is_running(task["id"]):
@@ -471,6 +507,8 @@ class Spawner:
 
         Shell tasks are never orphans: their script exiting is natural completion (or an
         operator cancelling), not a crash to respawn — so re-running it would be wrong."""
+        if self._is_remote(task):
+            return False  # transport loss is never permission to replay agent work
         if task.get("claimed_by") != self._runner_id or task["state"] in TERMINAL_LABELS:
             return False
         if (
@@ -606,6 +644,15 @@ class Spawner:
         a crash to recover (the same reason :meth:`_is_orphan`/:meth:`heal` skip them). A shell task
         whose session is gone reconciles to ``down`` for the operator to drop or respawn explicitly."""
         for task in tasks:
+            if (
+                self._is_remote(task)
+                and task.get("claimed_by") == self._runner_id
+                and task["state"] not in TERMINAL_LABELS
+            ):
+                assert self._remote_runner is not None
+                self._remote_runner.ensure_bridge(task["id"])
+                self._remote_runner.attach_session(task["id"])
+                continue
             if task.get("claimed_by") != self._runner_id:
                 continue
             if task["state"] in TERMINAL_LABELS:
@@ -646,6 +693,11 @@ class Spawner:
         if task["state"] not in TERMINAL_LABELS:
             return
         backend = self._runner_for(task)
+        if isinstance(backend, OutfitterRunner):
+            backend.close_task(task["id"])
+            if task.get("claimed_by") == self._runner_id:
+                self._client.release(task["id"])
+            return
         try:
             exited_container = backend is self._runner and not backend.is_running(task["id"])
         except Exception:

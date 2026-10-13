@@ -1,0 +1,44 @@
+name: Workspace runtime
+on:
+  push:
+    branches: [main, feat/outfitter-remote]
+    paths: [src/**, container/**, pyproject.toml, .github/workflows/workspace-runtime.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and verify the runtime
+        run: |
+          docker build -f container/workspace.Dockerfile -t panopticon-runtime:test .
+          docker run --rm --entrypoint outfitter panopticon-runtime:test --version | grep -Fx 1.18.0
+          docker run --rm --user root --volume "$PWD/tests:/tests:ro" --entrypoint sh panopticon-runtime:test -c 'pip install --quiet pytest pytest-asyncio && python -m pytest -q /tests/container/test_workspace.py'
+          docker run --rm --entrypoint python panopticon-runtime:test -c 'from panopticon.container.workspace import WorkspaceRuntime, create_apps'
+          docker run --detach --name runtime-smoke --publish 127.0.0.1:18080:8080 --env WORKSPACE_TOKEN=runtime-smoke-token-over-thirty-two-characters panopticon-runtime:test
+          trap 'docker logs runtime-smoke; docker rm --force runtime-smoke' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent -H 'Authorization: Bearer runtime-smoke-token-over-thirty-two-characters' http://127.0.0.1:18080/health > /tmp/health.json; then break; fi
+            sleep 1
+          done
+          python -c 'import json; assert json.load(open("/tmp/health.json"))["panopticonSessions"] == 1'
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18080/health)" = 401
+      - name: Publish immutable runtime
+        id: publish
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: container/workspace.Dockerfile
+          push: true
+          tags: ghcr.io/ai-outfitter/panopticon-runtime:sha-${{ github.sha }}
+      - name: Record deployment reference
+        run: echo 'ghcr.io/ai-outfitter/panopticon-runtime@${{ steps.publish.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"

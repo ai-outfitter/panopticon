@@ -65,7 +65,10 @@ refresh_readiness() {
             codex_repo_auth_configured "${PANOPTICON_ENV_FILE:-}" "$credential_path" \
                 && harness_configured=1
             ;;
-        pi|outfitter)
+        outfitter)
+            [ -s "$credential_path/outfitter/.pi/agent/auth.json" ] && harness_configured=1
+            ;;
+        pi)
             pi_repo_auth_configured "${PANOPTICON_ENV_FILE:-}" "$credential_path" \
                 && harness_configured=1
             ;;
@@ -315,6 +318,36 @@ setup_codex_auth() {
         echo "Couldn't store Codex auth in the repo credential directory. Token contents were not printed."
         add_summary "Codex auth: login succeeded, but auth.json could not be stored for the repo."
     fi
+}
+
+# Outfitter owns native device credentials and refresh in an isolated application home.
+setup_outfitter_auth() {
+    if ! command -v outfitter >/dev/null 2>&1; then
+        echo "Install @ai-outfitter/outfitter, then rerun setup."
+        return 1
+    fi
+    _soa_dir=${credential_dir:-outfitter.d}
+    _soa_path="$PANOPTICON_SECRETS_DIR/$_soa_dir"
+    _soa_home="$_soa_path/outfitter"
+    umask 077
+    mkdir -p "$_soa_home/.agents/agents/panopticon" || return 1
+    if [ ! -f "$_soa_home/.agents/settings.yml" ]; then
+        printf 'experimental:\n  outfitter_provider: true\n' > "$_soa_home/.agents/settings.yml"
+    fi
+    if [ ! -f "$_soa_home/.agents/agents/panopticon/agent.md" ]; then
+        printf '%s\n' '---' 'name: panopticon' '---' 'Follow the supplied Panopticon workflow.' > "$_soa_home/.agents/agents/panopticon/agent.md"
+    fi
+    if [ "${PANOPTICON_OUTFITTER_REMOTE:-}" = 1 ]; then
+        OUTFITTER_USER_HOME="$_soa_home" outfitter login --workspaces || return 1
+    else
+        OUTFITTER_USER_HOME="$_soa_home" outfitter login || return 1
+    fi
+    [ -s "$_soa_home/.pi/agent/auth.json" ] || return 1
+    chmod 600 "$_soa_home/.pi/agent/auth.json" || return 1
+    set_repo_credential_dir "$_soa_dir" || return 1
+    credential_dir=$_soa_dir
+    credential_path=$_soa_path
+    add_summary "Outfitter auth: native device sign-in saved in $credential_dir."
 }
 
 # Full Pi dispatch. Name every adapter-supported provider variable, then collect the chosen key with
