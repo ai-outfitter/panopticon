@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 from test_credential_scoping_spec import WRITE_TOKEN, _bearer, _client, _create_task, _task_token
 
 

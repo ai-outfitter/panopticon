@@ -66,4 +66,3 @@ The initial verified package is @ai-outfitter/outfitter 1.18.0. Launch uses
 `outfitter run panopticon --harness pi -- ...` and a durable isolated
 `OUTFITTER_USER_HOME`. Workspace access and bridge commands require the matching
 updated host CLI build. The remote runtime needs only the published run command.
-
