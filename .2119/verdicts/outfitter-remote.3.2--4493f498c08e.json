@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.2--4493f498c08e",
+  "requirementId": "outfitter-remote.3.2",
+  "hash": "4493f498c08e",
+  "verdict": "pass",
+  "summary": "Outbound session configuration test rejects leakage of the populated fleet credential into remote task config.",
+  "timestamp": "2026-10-13T20:22:17.712Z"
+}

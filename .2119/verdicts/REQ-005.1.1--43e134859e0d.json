@@ -1,0 +1,8 @@
+{
+  "reviewId": "REQ-005.1.1--43e134859e0d",
+  "requirementId": "REQ-005.1.1",
+  "hash": "43e134859e0d",
+  "verdict": "pass",
+  "summary": "Real shell dispatcher routes Outfitter to native auth rather than unsupported or Pi flows.",
+  "timestamp": "2026-10-13T20:41:55.946Z"
+}

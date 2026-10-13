@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.5.2--909f1fca90e6",
+  "requirementId": "outfitter-remote.5.2",
+  "hash": "909f1fca90e6",
+  "verdict": "pass",
+  "summary": "Executable companion device suite retains authorization_pending until explicit approval and preserves workspace scope through refresh.",
+  "timestamp": "2026-10-13T20:42:32.741Z"
+}

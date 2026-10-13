@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.5--02ed786590f3",
+  "requirementId": "outfitter-remote.3.5",
+  "hash": "02ed786590f3",
+  "verdict": "pass",
+  "summary": "Executable companion reconnect test commits one HTTP mutation disconnects before response and verifies exactly one mutation after reconnection.",
+  "timestamp": "2026-10-13T20:42:30.793Z"
+}

@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.1.5--83efb2d6fdb3",
+  "requirementId": "outfitter-remote.1.5",
+  "hash": "83efb2d6fdb3",
+  "verdict": "pass",
+  "summary": "Executed generated extension handlers report authenticated agent and user turns to local HTTP.",
+  "timestamp": "2026-10-13T20:51:41.205Z"
+}

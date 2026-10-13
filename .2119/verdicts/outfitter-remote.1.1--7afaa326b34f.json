@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.1.1--7afaa326b34f",
+  "requirementId": "outfitter-remote.1.1",
+  "hash": "7afaa326b34f",
+  "verdict": "pass",
+  "summary": "Harness command and image tests verify current agent interface and exactly pinned published CLI release.",
+  "timestamp": "2026-10-13T20:51:39.218Z"
+}

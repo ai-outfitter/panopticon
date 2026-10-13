@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.1.4--c8859a48f23f",
+  "requirementId": "outfitter-remote.1.4",
+  "hash": "c8859a48f23f",
+  "verdict": "pass",
+  "summary": "Initial-launch command carries the exact initial task prompt.",
+  "timestamp": "2026-10-13T20:51:40.721Z"
+}

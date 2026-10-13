@@ -111,20 +111,22 @@ class StageEntryWaker:
 
         if self._runner_id is not None and full.get("claimed_by") != self._runner_id:
             return
-        if not observed_live:
+        can_wake = getattr(type(self._runner), "can_wake", None)
+        remote_wake = bool(can_wake(self._runner, task_id)) if callable(can_wake) else False
+        if not observed_live and not remote_wake:
             self._settle(task_id, pending, WakeStatus.SKIPPED)
             return
         if self._environ.get(OPT_OUT_ENV):
             self._settle(task_id, pending, WakeStatus.SKIPPED)
             return
-        if full.get("container_status") != ContainerStatus.LIVE.value:
+        if full.get("container_status") != ContainerStatus.LIVE.value and not remote_wake:
             return
 
         for entry_index in pending:
             current = self._client.get_task(task_id)
             if self._runner_id is not None and current.get("claimed_by") != self._runner_id:
                 return
-            if current.get("container_status") != ContainerStatus.LIVE.value:
+            if current.get("container_status") != ContainerStatus.LIVE.value and not remote_wake:
                 return
             current_history = cast(list[JsonObj], current["history"])
             if (

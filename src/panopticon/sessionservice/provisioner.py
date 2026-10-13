@@ -25,6 +25,7 @@ from collections.abc import Callable
 from panopticon.client import JsonObj, TaskServiceClient
 from panopticon.core.git import GitClones, branch_name
 from panopticon.sessionservice.executions import WorkflowExecutions
+from panopticon.sessionservice.outfitter_runner import OutfitterRunner
 
 
 class Provisioner:
@@ -43,10 +44,12 @@ class Provisioner:
         clones_root: str,
         git: GitClones | None = None,
         executions: WorkflowExecutions | None = None,
+        remote_runner: OutfitterRunner | None = None,
         workspace_exists: Callable[[str], bool] = os.path.isdir,
         inspect_repository: Callable[[str], tuple[str, str]] | None = None,
     ) -> None:
         self._client = client
+        self._remote_runner = remote_runner
         self._clones_root = clones_root.rstrip("/")
         self._git = git or GitClones()
         self._executions = executions or WorkflowExecutions(client)
@@ -65,6 +68,8 @@ class Provisioner:
         is nothing to branch — the guarantee that ``runner_type = "shell"`` means *no clone* holds
         even if such a task somehow acquires a slug.
         """
+        if self._remote_runner is not None and task.get("harness") == "outfitter":
+            return self._remote_runner.provision(task)
         if not task.get("slug"):
             return None
         if self._executions.is_shell(task.get("workflow")):

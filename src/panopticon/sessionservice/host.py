@@ -43,7 +43,9 @@ from panopticon.sessionservice.clones import CloneCache
 from panopticon.sessionservice.executions import WorkflowExecutions
 from panopticon.sessionservice.images import ImageBuilder
 from panopticon.sessionservice.local_runner import DEFAULT_IMAGE, LocalRunner
+from panopticon.sessionservice.outfitter_runner import OutfitterRunner
 from panopticon.sessionservice.provisioner import Provisioner
+from panopticon.sessionservice.remote_session_io import RemoteSessionIO
 from panopticon.sessionservice.session_io import SessionIOWorker
 from panopticon.sessionservice.shell_runner import ShellRunner
 from panopticon.sessionservice.spawner import Spawner, spawnable_tasks
@@ -239,6 +241,16 @@ def run_host(
 
     ``daemon_reachable`` (REQ-031.3) is the real Docker-daemon liveness probe by default; tests
     inject a fake so they don't shell out."""
+    remote = (
+        OutfitterRunner(
+            client,
+            runner_id=runner_id,
+            service_url=os.environ.get("PANOPTICON_SERVICE_URL", "http://127.0.0.1:8000"),
+            state_root=Path(tasks_root).parent / "outfitter-remote",
+        )
+        if os.environ.get("PANOPTICON_OUTFITTER_REMOTE") == "1"
+        else None
+    )
     executions = WorkflowExecutions(client)  # one shared "how is this workflow run" cache for both
     spawner = Spawner(
         client,
@@ -247,15 +259,19 @@ def run_host(
         cache=cache,
         tasks_root=tasks_root,
         shell_runner=shell_runner,
+        remote_runner=remote,
         executions=executions,
         git=git,
         images=images,
         makedirs=makedirs,
         daemon_reachable=daemon_reachable,  # REQ-031.3: defer, don't crash-loop, when unreachable
     )
-    provisioner = Provisioner(client, clones_root=tasks_root, git=git, executions=executions)
-    waker = StageEntryWaker(client, runner, runner_id=runner_id)
-    session_io = SessionIOWorker(client, runner, runner_id=runner_id)
+    provisioner = Provisioner(
+        client, clones_root=tasks_root, git=git, executions=executions, remote_runner=remote
+    )
+    io = RemoteSessionIO(client, runner, remote)
+    waker = StageEntryWaker(client, io, runner_id=runner_id)
+    session_io = SessionIOWorker(client, io, runner_id=runner_id)
     HostDaemon(
         client,
         spawner,
@@ -324,7 +340,8 @@ def main(
     )
     if client is None:
         environment_token()
-    preflight_or_exit()
+    if os.environ.get("PANOPTICON_OUTFITTER_REMOTE") != "1":
+        preflight_or_exit()
     migrate_session_dirs(CLONE_CACHE_DIR, TASKS_DIR)
     client = client or _make_client(args.service_url)
     runner = LocalRunner(args.container_service_url, image=args.image, runner_id=args.runner_id)

@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.7--4530274240fc",
+  "requirementId": "outfitter-remote.4.7",
+  "hash": "4530274240fc",
+  "verdict": "pass",
+  "summary": "Companion session scheduler renews active execution instead of idle suspend and runtime rejects active suspension.",
+  "timestamp": "2026-10-13T20:50:28.131Z"
+}

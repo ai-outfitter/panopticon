@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.8--d96401456bb0",
+  "requirementId": "outfitter-remote.4.8",
+  "hash": "d96401456bb0",
+  "verdict": "pass",
+  "summary": "Real tmux runtime sleep and changed-generation wake relaunch a fake agent that reads the preserved conversation.",
+  "timestamp": "2026-10-13T20:58:55.450Z"
+}

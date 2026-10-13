@@ -2,8 +2,8 @@
 
 ## Overview
 
-Repository setup recognizes Outfitter as a supported harness and prepares the credentials and
-profile directory that its Pi-based adapter consumes.
+Repository setup recognizes Outfitter as a supported harness and uses the current
+CLI's native device login in the repository's private application home.
 
 ## Requirements
 
@@ -13,12 +13,12 @@ profile directory that its Pi-based adapter consumes.
 
 ### REQ-005.2: Authentication behavior
 
-1. For identical credential inputs, Outfitter repository setup MUST offer or skip authentication under the same conditions as Pi repository setup.
+1. Outfitter repository setup MUST use the native Outfitter login for authentication.
 
-### REQ-005.3: Credential notice
+### REQ-005.3: Workspace permission
 
-1. While setting up an `outfitter` repository, repository setup MUST emit a notice contained on one output line stating that Outfitter uses Pi credentials.
+1. Outfitter repository setup MUST request workspace permission only when remote execution is explicitly enabled.
 
-### REQ-005.4: Profile directory
+### REQ-005.4: Application home
 
-1. When an Outfitter repository configures `credential_dir`, and `<credential_dir>/outfitter/profiles` can be made a directory by creating missing path components without removing or replacing an existing filesystem entry, repository setup MUST successfully ensure that path is a directory, including when it already exists.
+1. Successful Outfitter repository setup MUST configure an isolated application home containing the Panopticon agent definition.

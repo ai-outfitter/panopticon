@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.6.1--e952a4ab6a57",
+  "requirementId": "outfitter-remote.6.1",
+  "hash": "e952a4ab6a57",
+  "verdict": "pass",
+  "summary": "Executable companion inference suite resolves the session owner provider chain and rejects a mismatched workspace principal.",
+  "timestamp": "2026-10-13T20:42:34.217Z"
+}

@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.2.5--c47a11bf92b9",
+  "requirementId": "outfitter-remote.2.5",
+  "hash": "c47a11bf92b9",
+  "verdict": "pass",
+  "summary": "Spawner rejects incompatible gateway and runtime before acquiring a claim.",
+  "timestamp": "2026-10-13T20:41:51.614Z"
+}

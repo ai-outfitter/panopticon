@@ -1,5 +1,9 @@
 # panopticon
 
+This is the public [ai-outfitter fork](https://github.com/ai-outfitter/panopticon) of
+[Panopticon Next](https://github.com/Unsupervisedcom/panopticon-next). Optional managed
+Outfitter execution is documented in [Outfitter remote execution](docs/outfitter-remote.md).
+
 **Agents write the code, you own what ships.**
 
 Panopticon is a terminal-native control plane for running multiple coding agents. It drives Claude

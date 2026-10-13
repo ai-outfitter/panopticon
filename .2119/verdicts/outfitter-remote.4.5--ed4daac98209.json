@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.5--ed4daac98209",
+  "requirementId": "outfitter-remote.4.5",
+  "hash": "ed4daac98209",
+  "verdict": "pass",
+  "summary": "Real host websocket disconnect leaves workspace hold expiry and running task ledger unchanged.",
+  "timestamp": "2026-10-13T20:50:27.647Z"
+}

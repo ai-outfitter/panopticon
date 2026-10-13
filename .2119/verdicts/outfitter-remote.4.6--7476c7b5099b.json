@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.4.6--7476c7b5099b",
+  "requirementId": "outfitter-remote.4.6",
+  "hash": "7476c7b5099b",
+  "verdict": "pass",
+  "summary": "Lost-pane status durably latches interruption; idle suspend and healthy resume reject it across restart, alongside generation-loss and no-auto-heal tests.",
+  "timestamp": "2026-10-13T20:58:54.960Z"
+}

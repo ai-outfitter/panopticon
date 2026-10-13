@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.4--961795f7d396",
+  "requirementId": "outfitter-remote.3.4",
+  "hash": "961795f7d396",
+  "verdict": "pass",
+  "summary": "Populated provider key remains absent from remote config and generated provider config uses only workspace relay sentinel.",
+  "timestamp": "2026-10-13T20:51:42.180Z"
+}

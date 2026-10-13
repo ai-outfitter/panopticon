@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.3.1--1d73a5a66cc3",
+  "requirementId": "outfitter-remote.3.1",
+  "hash": "1d73a5a66cc3",
+  "verdict": "pass",
+  "summary": "Executable companion callback suite verifies local HTTP receives only the task-scoped bearer capability.",
+  "timestamp": "2026-10-13T20:42:30.302Z"
+}

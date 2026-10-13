@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.6.3--3555a744b8fb",
+  "requirementId": "outfitter-remote.6.3",
+  "hash": "3555a744b8fb",
+  "verdict": "pass",
+  "summary": "Fresh ticket websocket tests independently reject mismatched workspace and mismatched installation.",
+  "timestamp": "2026-10-13T20:50:29.586Z"
+}

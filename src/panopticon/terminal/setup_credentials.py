@@ -225,7 +225,12 @@ def configured(connection: Connection) -> bool:
         return True
     if connection.harness in {"codex", "pi", "outfitter"} and connection.credential_dir:
         try:
-            data = json.loads(read_private(f"{connection.credential_dir}/auth.json"))
+            auth_ref = (
+                f"{connection.credential_dir}/outfitter/.pi/agent/auth.json"
+                if connection.harness == "outfitter"
+                else f"{connection.credential_dir}/auth.json"
+            )
+            data = json.loads(read_private(auth_ref))
         except (FileNotFoundError, json.JSONDecodeError):
             return False
         return isinstance(data, dict) and bool(data)
@@ -296,6 +301,34 @@ def connect(
             auth = json.loads(read_private(f"{credential_dir}/auth.json"))
             if not isinstance(auth, dict) or not auth:
                 raise ValueError("Codex did not save usable credential data. Run setup again.")
+    elif harness == "outfitter":
+        if not shutil.which("outfitter"):
+            raise RuntimeError("Install @ai-outfitter/outfitter, then run setup again.")
+        credential_dir = f"outfitter-{uuid.uuid4().hex}.d"
+        app_home = _private_root() / credential_dir / "outfitter"
+        (app_home / ".agents" / "agents" / "panopticon").mkdir(parents=True, mode=0o700)
+        (app_home / ".agents" / "settings.yml").write_text(
+            "experimental:\n  outfitter_provider: true\n"
+        )
+        (app_home / ".agents" / "agents" / "panopticon" / "agent.md").write_text(
+            "---\nname: panopticon\n---\nFollow the supplied Panopticon workflow.\n"
+        )
+        remote = os.environ.get("PANOPTICON_OUTFITTER_REMOTE") == "1"
+        command = ["outfitter", "login"] + (["--workspaces"] if remote else [])
+        result = run(
+            command,
+            env={**os.environ, "OUTFITTER_USER_HOME": str(app_home)},
+            umask=0o077,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("Outfitter sign-in failed; previous credentials were kept.")
+        auth = app_home / ".pi" / "agent" / "auth.json"
+        if not auth.is_file():
+            raise RuntimeError("Outfitter did not save credentials.")
+        for directory in (app_home.parent, app_home, app_home / ".pi", app_home / ".pi" / "agent"):
+            directory.chmod(0o700)
+        auth.chmod(0o600)
     else:
         print("Supported provider variables: " + ", ".join(AUTH_KEYS[harness]))
         key = input_fn("Provider variable [ANTHROPIC_API_KEY]: ").strip() or "ANTHROPIC_API_KEY"

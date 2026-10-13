@@ -23,15 +23,15 @@ from panopticon.terminal.setup_credentials import (
 
 
 def choose_agent(*, input_fn: Callable[[str], str] = input) -> str:
-    names = ("claude", "codex", "pi")
-    print("Choose the coding agent to connect: 1) Claude  2) Codex  3) Pi")
+    names = ("claude", "codex", "pi", "outfitter")
+    print("Choose the coding agent to connect: 1) Claude  2) Codex  3) Pi  4) Outfitter")
     while True:
         answer = input_fn("Agent [1]: ").strip().lower() or "1"
-        if answer in {"1", "2", "3"}:
+        if answer in {"1", "2", "3", "4"}:
             return names[int(answer) - 1]
         if answer in names:
             return answer
-        print("Choose 1, 2, or 3.")
+        print("Choose 1, 2, 3, or 4.")
 
 
 def configure_connection(

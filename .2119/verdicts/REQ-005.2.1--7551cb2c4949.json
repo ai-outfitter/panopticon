@@ -1,0 +1,8 @@
+{
+  "reviewId": "REQ-005.2.1--7551cb2c4949",
+  "requirementId": "REQ-005.2.1",
+  "hash": "7551cb2c4949",
+  "verdict": "pass",
+  "summary": "Fake executable records native login invocation and failed login prevents repository update and successful summary.",
+  "timestamp": "2026-10-13T20:41:56.430Z"
+}

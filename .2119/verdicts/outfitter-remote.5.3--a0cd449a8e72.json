@@ -1,0 +1,8 @@
+{
+  "reviewId": "outfitter-remote.5.3--a0cd449a8e72",
+  "requirementId": "outfitter-remote.5.3",
+  "hash": "a0cd449a8e72",
+  "verdict": "pass",
+  "summary": "Executable companion websocket suite rejects an expired bridge ticket.",
+  "timestamp": "2026-10-13T20:42:33.262Z"
+}
