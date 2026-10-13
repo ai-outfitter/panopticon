@@ -258,3 +258,57 @@ def test_terminal_tasks_close_the_managed_session(context, monkeypatch, state):
     spawner.cleanup({**task, "state": state, "claimed_by": "runner"})
     assert remote.calls == [(("close", remote.workspace(task["id"])), None)]
     client.release.assert_called_once_with(task["id"])
+
+
+@pytest.mark.parametrize("attached", ["0", "1"])
+@pytest.mark.parametrize("state", ["Sleeping", "Running", "Interrupted"])
+def test_dashboard_reattachment_wakes_only_healthy_workspaces(
+    context, monkeypatch, attached, state
+):
+    from panopticon.sessionservice import outfitter_runner
+
+    remote, _client, task, _repo = context
+    monkeypatch.setattr(
+        outfitter_runner.subprocess,
+        "run",
+        lambda *args, **kwargs: MagicMock(returncode=0, stdout=attached),
+    )
+    original = remote.command
+
+    def command(*args, payload=None, application_home=None):
+        if args[0] == "inspect":
+            remote.calls.append((args, payload))
+            return {"state": state}
+        if args[0] == "session-status":
+            return {"running": False, "state": "sleeping"}
+        return original(*args, payload=payload, application_home=application_home)
+
+    remote.command = command
+    OutfitterRunner.attach_session(remote, task["id"])
+    if attached == "0":
+        assert remote.calls == []
+    elif state == "Sleeping":
+        assert (("wake", remote.workspace(task["id"])), None) in remote.calls
+    elif state == "Running":
+        assert any(payload == {"operation": "resume"} for _, payload in remote.calls)
+    else:
+        assert all(args[0] not in {"wake", "session"} for args, _ in remote.calls)
+
+
+def test_dashboard_terminal_uses_its_connections_isolated_outfitter_home(context, monkeypatch):
+    from panopticon.sessionservice import outfitter_runner
+
+    remote, _client, task, _repo = context
+    remote.application_homes[remote.workspace(task["id"])] = "/private/connection home/outfitter"
+    run = MagicMock(side_effect=[MagicMock(returncode=1), MagicMock(returncode=0)])
+    monkeypatch.setattr(outfitter_runner.subprocess, "run", run)
+    OutfitterRunner.attach_session(remote, task["id"])
+    command = run.call_args_list[1].args[0][-1]
+    import shlex
+
+    argv = shlex.split(command)
+    assert argv[:3] == [
+        "env",
+        "OUTFITTER_USER_HOME=/private/connection home/outfitter",
+        "outfitter",
+    ]

@@ -239,17 +239,45 @@ class OutfitterRunner:
             ).returncode
             == 0
         )
-        if not exists:
-            command = shlex.join(
+        if exists:
+            # A background attachment must not keep idle compute awake. A user
+            # returning to that local tmux pane explicitly wakes healthy compute.
+            attached = subprocess.run(
                 [
-                    self.binary,
-                    "workspaces",
-                    "attach",
-                    self.workspace(task_id),
-                    "--installation",
-                    self.installation,
-                ]
+                    "tmux",
+                    "-L",
+                    "panopticon",
+                    "display-message",
+                    "-p",
+                    "-t",
+                    session,
+                    "#{session_attached}",
+                ],
+                capture_output=True,
+                text=True,
             )
+            if attached.returncode == 0 and attached.stdout.strip() not in {"", "0"}:
+                workspace = self.workspace(task_id)
+                state = self.command("inspect", workspace).get("state")
+                if state == "Sleeping":
+                    self.command("wake", workspace)
+                elif state == "Running":
+                    status = self.command_session_status(task_id)
+                    if not status.get("running") and status.get("state") == "sleeping":
+                        self.command("session", workspace, payload={"operation": "resume"})
+            return
+        if not exists:
+            argv = [
+                self.binary,
+                "workspaces",
+                "attach",
+                self.workspace(task_id),
+                "--installation",
+                self.installation,
+            ]
+            if app_home := self.application_homes.get(self.workspace(task_id)):
+                argv = ["env", f"OUTFITTER_USER_HOME={app_home}", *argv]
+            command = shlex.join(argv)
             subprocess.run(
                 [
                     "tmux",
